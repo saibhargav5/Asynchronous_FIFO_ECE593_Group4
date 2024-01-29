@@ -19,7 +19,7 @@ module consumer(
 
   always_ff@(posedge clk2) begin
     if(Read)begin
-      if(Empty)
+      if(!Empty)
         Data_out <= 0;
       else
         Data_out <= mem[rd_ptr];
