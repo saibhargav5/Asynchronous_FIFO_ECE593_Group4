@@ -28,9 +28,6 @@ reg [PTR_WIDTH-1:0] wr_ptr_gray_rd_clk,rd_ptr_gray_wr_clk;
 reg wr_toggle_f,rd_toggle_f;
 reg wr_toggle_f_rd_clk,rd_toggle_f_wr_clk;
 
-//fifo is sequebntial design
-//process in fifo
-//writ,read=>do they happen on same or differnt clock?differnt clock
 //both can be coded in to differnt always block
 //write always block
 always@(posedge wr_clk_i%3==0)begin
@@ -113,11 +110,9 @@ end
 end
 end
 //full
-//
-//combinational in logic
+
 always@(*)begin
 
-//wr_ptr,rd_ptr,wr_toggle_f,rd_toggle_f
 empty_o=0;
 full_o=0;
 if(wr_ptr_gray==rd_ptr_gray_wr_clk)begin
@@ -128,7 +123,7 @@ if(wr_ptr_gray_rd_clk==rd_ptr_gray)begin
 if(wr_toggle_f_rd_clk==rd_toggle_f)empty_o=1;
 end
 end
-always@(posedge rd_clk_i)begin//to stage synchonizer
+always@(posedge rd_clk_i)begin
 wr_ptr_gray_rd_clk<=wr_ptr_gray;
 wr_toggle_f_rd_clk<=wr_toggle_f;
 end
