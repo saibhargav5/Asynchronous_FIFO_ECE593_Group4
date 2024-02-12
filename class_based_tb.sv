@@ -3,7 +3,7 @@ class transaction;
 	rand bit select;
 	rand bit wr_en,rd_en;
 	rand bit [63:0]din;
-	logic [63:0]dout;
+	bit [63:0]dout;
 	bit full,empty,almost_full,almost_empty;	
 	
 	constraint tag{	wr_en dist{1:=3,0:=1};}
@@ -35,12 +35,10 @@ task run();
 endtask
 
 function void display();
-$display("[Generator] : write enable = %0d, read enable = %0d, din = %0d", tr.wr_en, tr.rd_en, tr.din);
+	$display("[Generator] : write enable = %0d, read enable = %0d, din = %0d", tr.wr_en, tr.rd_en, tr.din);
 endfunction
 
 endclass
-
-
 
 class driver;
 	transaction tr;
@@ -66,22 +64,20 @@ endtask
 
 //Write to the FIFO
 task write();
-begin
-	@(negedge fifo.clk1);
-	fifo.rst <= 1'b0;
+    @(negedge fifo.clk1);
+    fifo.rst <= 1'b0;
     fifo.rd_en <= 1'b0;
     fifo.wr_en <= 1'b1;
     fifo.din <= $urandom_range(1, 100);
     @(negedge fifo.clk1);
     fifo.wr_en <= 1'b0;
     $display("[DRV] : DATA WRITE  data : %0d", fifo.din);  
-	@(negedge fifo.clk1);
-	end
+    @(negedge fifo.clk1);
 endtask
 
 //Read from the FIFO
 task read();
-@(negedge fifo.clk2);
+    @(negedge fifo.clk2);
     fifo.rst <= 1'b0;
     fifo.rd_en <= 1'b1;
     fifo.wr_en <= 1'b0;
@@ -89,7 +85,7 @@ task read();
     fifo.rd_en <= 1'b0;      
     $display("[DRV] : DATA READ");  
     @(negedge fifo.clk2);
-  endtask
+endtask
 
 //Applying stimulus to DUT
 task run();
@@ -101,9 +97,8 @@ task run();
 	  else
         read();
     end
-  endtask
-  
-  endclass
+endtask
+endclass
   
  interface fifo_inf;
   
@@ -115,7 +110,6 @@ task run();
  
 endinterface
   
-
 
 module testbench;
 
@@ -150,6 +144,6 @@ module testbench;
    
    initial begin
    #200;
-	$finish();
+   $finish();
    end
 endmodule
