@@ -6,6 +6,7 @@ class transaction;
 	bit [63:0]dout;
 	bit full,empty,almost_full,almost_empty;	
 	
+  constraint sel { select dist{1:=2,0:=2};}
 	constraint tag{	wr_en dist{1:=3,0:=1};}
 	constraint tag1{ rd_en dist{1:=2,0:=1};}
 	
@@ -17,7 +18,7 @@ class generator;
 	mailbox #(transaction) mbx;
 	int count = 0;
 	int i = 0;
-	
+	event done;
 	
 function new(mailbox #(transaction) mbx);
 	this.mbx = mbx;
@@ -29,9 +30,10 @@ task run();
 		assert (tr.randomize()) else $error("Randomization failed");
 		i++;
 		mbx.put(tr);
-		$display("[GEN] : %0d iteration", i);
+		$display("[GEN] : %0d iteration  data: %0d", i,tr.din);
 		#10;
     end
+	-> done;
 endtask
 
 function void display();
@@ -43,7 +45,7 @@ endclass
 class driver;
 	transaction tr;
 	virtual fifo_inf fifo;
-	mailbox #(transaction) mbx;    
+	mailbox #(transaction) mbx;  
 	
 function new (mailbox #(transaction) mbx);
 	this.mbx = mbx;
@@ -55,8 +57,8 @@ task initialize();
 	fifo.din <= '0;
 	fifo.wr_en <= '0;
 	fifo.rd_en <= '0;
-	repeat (5) @(negedge fifo.clk1);
-	repeat (5) @(negedge fifo.clk2);
+	repeat (2) @(negedge fifo.clk1);
+	repeat (2) @(negedge fifo.clk2);
 	fifo.rst <= '0;
 	$display("[DRV] : DUT Reset Done");
 	$display("------------------------------------------"); 
@@ -68,11 +70,10 @@ task write();
     fifo.rst <= 1'b0;
     fifo.rd_en <= 1'b0;
     fifo.wr_en <= 1'b1;
-    fifo.din <= $urandom_range(1, 100);
-    @(negedge fifo.clk1);
+    fifo.din <= tr.din;
+    #6;
     fifo.wr_en <= 1'b0;
     $display("[DRV] : DATA WRITE  data : %0d", fifo.din);  
-    @(negedge fifo.clk1);
 endtask
 
 //Read from the FIFO
@@ -81,14 +82,14 @@ task read();
     fifo.rst <= 1'b0;
     fifo.rd_en <= 1'b1;
     fifo.wr_en <= 1'b0;
-    @(negedge fifo.clk2);
+    #8.89;
     fifo.rd_en <= 1'b0;      
-    $display("[DRV] : DATA READ");  
-    @(negedge fifo.clk2);
+  $display("[DRV] : DATA READ ");  
 endtask
 
 //Applying stimulus to DUT
 task run();
+	initialize();
     forever begin
       mbx.get(tr);  
 	  @(posedge fifo.clk1);
@@ -97,13 +98,14 @@ task run();
 	  else
         read();
     end
+	
 endtask
 endclass
   
  interface fifo_inf;
   
-  logic clk1,clk2, rd_en, wr_en;         		// Clock, read, and write signals
-  logic full, empty,almost_full,almost_empty;           // Flags indicating FIFO status
+  bit clk1,clk2, rd_en, wr_en;         		// Clock, read, and write signals
+  bit full, empty,almost_full,almost_empty; // Flags indicating FIFO status
   logic [63:0] din;         				// Data input
   logic [63:0] dout;        				// Data output
   logic rst;                   				// Reset signal
@@ -115,6 +117,7 @@ module testbench;
 
   generator g;
   driver d;
+  event done;
   mailbox #(transaction) mbx;
   fifo_inf fifo();
   asynchronous_fifo dut (fifo.clk1, fifo.clk2, fifo.rst, fifo.wr_en, fifo.rd_en, fifo.din, fifo.dout, fifo.full, fifo.empty, fifo.almost_full, fifo.almost_empty);
@@ -132,6 +135,7 @@ module testbench;
     g = new(mbx);
 	d = new(mbx);
 	d.fifo = fifo;
+	done = g.done;
     g.count = 30;
   end
  
@@ -140,10 +144,12 @@ module testbench;
 	g.run();
 	d.run();
 	join_none
+	wait(done.triggered);
    end
    
    initial begin
-   #200;
+     $dumpfile("dump.vcd"); $dumpvars;
+   #500;
    $finish();
    end
 endmodule
