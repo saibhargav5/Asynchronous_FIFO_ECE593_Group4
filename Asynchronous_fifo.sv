@@ -13,9 +13,9 @@ int counter2=0;
 
 assign full=(wrptr == 9'b101011110)?1'b1:1'b0;
 assign empty=(rdptr == wrptr)?1'b1:1'b0;
-assign almost_full=(wrptr == 9'b101001010)?1'b1:1'b0;
-assign almost_empty=(rdptr == 9'b101001010 && wrptr == 9'b101001010 )?1'b1:1'b0;
-
+assign almost_full=(wrptr >= 9'b101001010)?1'b1:1'b0;
+assign almost_empty=(rdptr <= 9'b000001010)?1'b1:1'b0;
+
 
 always @(posedge clk1 or negedge reset)
 begin
@@ -46,6 +46,7 @@ counter1=0;
 else
 counter1=counter1+1;
 end
+
 
 always_ff@(posedge clk2)
 begin
@@ -85,7 +86,7 @@ begin
 
        else if( counter1%3==0 && wr_en==1'b1 && full==1'b0) 
              begin 
-               wrptr<=wrptr+1'b1;
+               wrptr<=wrptr+9'b000000001;
                
             end
 end
@@ -100,15 +101,11 @@ begin
         else if(full && rdptr==9'b101011110)
         begin
          rdptr<=9'b0; end
-       else if(counter2%2 ==0 && rd_en==1'b1 && empty==1'b0) begin
-               rdptr<=rdptr+1'b1;
+       else if(counter2%2 ==0 && rd_en==1'b1 && empty==1'b0 && rdptr<=9'b101011110) begin
+               rdptr<=rdptr+9'b000000001;
                
      end
 end
 
 endmodule
-
-
-
-
 
